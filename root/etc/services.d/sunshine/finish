@@ -1,0 +1,3 @@
+#!/usr/bin/execlineb -P
+# If Sunshine exits, log and let s6 restart it (default behavior)
+s6-echo "sunshine: exited with code $1, restarting if needed..."
