@@ -2,9 +2,13 @@
 # We extend it with Sunshine so you can stream to Moonlight clients.
 FROM lscr.io/linuxserver/webtop:ubuntu-xfce
 
-# ---- base setup ----
 USER root
 ENV DEBIAN_FRONTEND=noninteractive
+
+# Cleaning out unnecessary packages from base image to keep size down
+RUN apt-get update \
+  && apt-get remove nginx -y 
+RUN rm -rf /etc/nginx /etc/s6-overlay/s6-rc.d/init-nginx
 
 # Sunshine runtime deps (X11, audio, GBM/DRM, input/event libs)
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -17,19 +21,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # ---- Sunshine install ----
 # Pin a version to keep builds reproducible. You can override at build time:
 #   docker build --build-arg SUNSHINE_VERSION=0.24.0 .
-ARG SUNSHINE_VERSION=0.24.0
-ARG ARCH=amd64
 RUN curl -L -o /tmp/sunshine.deb \
-      https://github.com/LizardByte/Sunshine/releases/download/v${SUNSHINE_VERSION}/sunshine_${SUNSHINE_VERSION}_${ARCH}.deb \
+  https://github.com/LizardByte/Sunshine/releases/download/v2025.1026.25932/sunshine-ubuntu-24.04-amd64.deb \
   && apt-get update \
-  && apt-get install -y /tmp/sunshine.deb || (apt-get -f install -y && apt-get install -y /tmp/sunshine.deb) \
-  && rm -f /tmp/sunshine.deb
+  && apt-get install -y /tmp/sunshine.deb \
+  && rm -f /tmp/sunshine.deb \
+  && rm -rf /var/lib/apt/lists/*
 
 # Create a place for Sunshine config and make sure the lsio 'abc' user owns it
 RUN mkdir -p /config/sunshine && chown -R abc:abc /config
 
 # Copy s6 service to launch Sunshine after X & audio are ready
 # (LinuxServer.io images use s6-overlay; dropping a service here auto-enables it)
+# Disable init-nginx service to avoid permission issues
+RUN rm -rf /etc/s6-overlay/s6-rc.d/init-nginx
 COPY root/ /
 
 # Network notes:
