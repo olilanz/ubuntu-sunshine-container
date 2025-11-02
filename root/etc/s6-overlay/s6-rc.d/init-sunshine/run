@@ -1,22 +1,15 @@
 #!/usr/bin/execlineb -P
-# s6-execline script: wait for X & Pulse, then exec Sunshine as 'abc'
 with-contenv
 backtick -E DISPLAY { import -u DISPLAY }
-# Wait for X socket (created by the headless X11 server in webtop)
 foreground { s6-echo "sunshine: waiting for X at ${DISPLAY} ..." }
-foreground { s6-echo "sunshine: checking if X socket exists..." }
 if { waitfile -t 300 /tmp/.X11-unix/X0 }
 foreground { s6-echo "sunshine: X socket found, proceeding..." }
 else
 foreground { s6-echo "sunshine: X socket not found, exiting..." }
 exit 1
 endif
-
-# Wait briefly for PulseAudio to come up (webtop handles audio stack)
 foreground { s6-echo "sunshine: waiting for PulseAudio to initialize..." }
 s6-sleep 2
 foreground { s6-echo "sunshine: PulseAudio initialized, proceeding..." }
-
-# Launch Sunshine using config dir; it will daemonize and manage its own ports
 s6-echo "sunshine: starting Sunshine service..."
 exec -c /usr/bin/sunshine --config-dir /config/sunshine

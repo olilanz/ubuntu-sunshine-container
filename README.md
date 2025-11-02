@@ -110,3 +110,22 @@ ubuntu-desktop-sunshine/
 
 ### 🧭 License
 MIT / Apache 2.0
+
+# Notes
+
+docker build -t ubuntu-xfce-sunshine .
+
+docker rm -f ubuntu-xfce-sunshine
+
+docker run --rm -it \
+  --name ubuntu-xfce-sunshine \
+  --runtime=nvidia \
+  --shm-size=16g \
+  --cap-add=SETGID --cap-add=SETUID --cap-add=CHOWN \
+  -e PUID=1000 -e PGID=1000 -e TZ=Europe/Copenhagen \
+  -e NVIDIA_VISIBLE_DEVICES=all -e NVIDIA_DRIVER_CAPABILITIES=all \
+  -p 47984:47984/tcp -p 47989:47989/tcp -p 47998-48010:47998-48010/udp \
+  -v /mnt/user/appdata/ubuntu-xfce-sunshine/config:/config \
+  -v /mnt/user/appdata/ubuntu-xfce-sunshine/workspace:/workspace \
+  --device /dev/dri \
+  ubuntu-xfce-sunshine
