@@ -120,6 +120,29 @@ RUN rm -rf /etc/s6-overlay/s6-rc.d/user/contents.d/* && \
       echo "$s" > /etc/s6-overlay/s6-rc.d/user/contents.d/$s ; \
     done
 
+# --- Dummy init-video service to satisfy Sunshine dependency    
+RUN mkdir -p /etc/s6-overlay/s6-rc.d/init-video && \
+    echo "oneshot" > /etc/s6-overlay/s6-rc.d/init-video/type && \
+    printf '#!/bin/bash\necho "init-video: dummy telemetry stub"\n' \
+      > /etc/s6-overlay/s6-rc.d/init-video/run && \
+    chmod +x /etc/s6-overlay/s6-rc.d/init-video/run && \
+    echo "" > /etc/s6-overlay/s6-rc.d/init-video/finish && \
+    chmod +x /etc/s6-overlay/s6-rc.d/init-video/finish && \
+    touch /etc/s6-overlay/s6-rc.d/init-video/up && \
+    echo init-video > /etc/s6-overlay/s6-rc.d/user/contents.d/init-video
+
+# 🧩 Replace LSIO's Xorg GPU loop (calls nvidia-smi) with a dummy
+RUN rm -rf /etc/s6-overlay/s6-rc.d/svc-xorg \
+           /etc/s6-overlay/s6-rc.d/user/contents.d/svc-xorg && \
+    mkdir -p /etc/s6-overlay/s6-rc.d/svc-xorg && \
+    echo "oneshot" > /etc/s6-overlay/s6-rc.d/svc-xorg/type && \
+    printf '#!/bin/bash\necho "svc-xorg: dummy placeholder for Sunshine (Xorg loop disabled)"\n' \
+      > /etc/s6-overlay/s6-rc.d/svc-xorg/run && \
+    chmod +x /etc/s6-overlay/s6-rc.d/svc-xorg/run && \
+    echo "" > /etc/s6-overlay/s6-rc.d/svc-xorg/finish && chmod +x /etc/s6-overlay/s6-rc.d/svc-xorg/finish && \
+    touch /etc/s6-overlay/s6-rc.d/svc-xorg/up && \
+    echo svc-xorg > /etc/s6-overlay/s6-rc.d/user/contents.d/svc-xorg
+
 # --- Sunshine service registration
 COPY root/etc/s6-overlay/s6-rc.d/init-sunshine /etc/s6-overlay/s6-rc.d/init-sunshine
 RUN echo "longrun" > /etc/s6-overlay/s6-rc.d/init-sunshine/type && \
@@ -135,5 +158,3 @@ RUN mkdir -p /config/sunshine/logs && chown -R abc:abc /config
 EXPOSE 47984/tcp 47989/tcp 47998-48010/udp
 ENV DISPLAY=:0 \
     SUNSHINE_CONFIG_DIR=/config/sunshine
-
-USER abc
