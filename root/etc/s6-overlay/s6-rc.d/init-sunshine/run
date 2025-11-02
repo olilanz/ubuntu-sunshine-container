@@ -17,9 +17,7 @@ fi
 
 echo "sunshine: waiting for PulseAudio to initialize..."
 sleep 2
-
 echo "sunshine: PulseAudio initialized, starting Sunshine..."
-#!/bin/bash
-echo "Starting Sunshine as non-root user abc..."
-exec su -s /bin/bash abc -c "sunshine --config-dir /config/sunshine"
-#exec /usr/bin/sunshine --config-dir /config/sunshine
+
+# Run Sunshine as non-root user
+exec su -s /bin/bash abc -c "/usr/bin/sunshine --config-dir /config/sunshine"

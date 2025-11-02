@@ -32,6 +32,9 @@ RUN apt-get update && \
     rm -f /tmp/sunshine.deb && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
+    # Install virtual display
+RUN apt-get update && apt-get install -y --no-install-recommends xvfb && rm -rf /var/lib/apt/lists/*
+
 # --- Ensure bash is installed (some Sunshine scripts use it explicitly)
 RUN apt-get update && apt-get install -y --no-install-recommends bash
 
