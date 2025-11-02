@@ -1,15 +1,22 @@
-#!/usr/bin/execlineb -P
-with-contenv
-backtick -E DISPLAY { import -u DISPLAY }
-foreground { s6-echo "sunshine: waiting for X at ${DISPLAY} ..." }
-if { waitfile -t 300 /tmp/.X11-unix/X0 }
-foreground { s6-echo "sunshine: X socket found, proceeding..." }
-else
-foreground { s6-echo "sunshine: X socket not found, exiting..." }
-exit 1
-endif
-foreground { s6-echo "sunshine: waiting for PulseAudio to initialize..." }
-s6-sleep 2
-foreground { s6-echo "sunshine: PulseAudio initialized, proceeding..." }
-s6-echo "sunshine: starting Sunshine service..."
-exec -c /usr/bin/sunshine --config-dir /config/sunshine
+#!/bin/bash
+set -e
+
+echo "sunshine: waiting for X at ${DISPLAY:-:0} ..."
+for i in {1..60}; do
+  if [ -S /tmp/.X11-unix/X0 ]; then
+    echo "sunshine: X socket found, proceeding..."
+    break
+  fi
+  sleep 5
+done
+
+if [ ! -S /tmp/.X11-unix/X0 ]; then
+  echo "sunshine: X socket not found after timeout, exiting..."
+  exit 1
+fi
+
+echo "sunshine: waiting for PulseAudio to initialize..."
+sleep 2
+
+echo "sunshine: PulseAudio initialized, starting Sunshine..."
+exec /usr/bin/sunshine --config-dir /config/sunshine
