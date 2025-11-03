@@ -113,9 +113,9 @@ MIT / Apache 2.0
 
 # Notes
 
-docker build -t ubuntu-xfce-sunshine .
-
 docker rm -f ubuntu-xfce-sunshine
+
+docker build -t ubuntu-xfce-sunshine .
 
 docker run --rm -it \
    --name ubuntu-xfce-sunshine \
@@ -123,6 +123,8 @@ docker run --rm -it \
    --shm-size=16g \
    --cap-add=SYS_ADMIN \
    --cap-add=SYS_TTY_CONFIG \
+   --device /dev/uinput \
+   --device /dev/nvidia-uvm \
    --device /dev/nvidia0 \
    --device /dev/nvidiactl \
    --device /dev/nvidia-modeset \
@@ -130,6 +132,6 @@ docker run --rm -it \
    -e PUID=1000 -e PGID=1000 -e TZ=Europe/Copenhagen \
    -e NVIDIA_VISIBLE_DEVICES=all -e NVIDIA_DRIVER_CAPABILITIES=all \
    -p 47984:47984/tcp -p 47989:47989/tcp -p 47998-48010:47998-48010/udp \
-   -v /mnt/user/appdata/ubuntu-xfce-sunshine/config:/config \
-   -v /mnt/user/appdata/ubuntu-xfce-sunshine/workspace:/workspace \
    ubuntu-xfce-sunshine
+
+docker exec -it ubuntu-xfce-sunshine bash

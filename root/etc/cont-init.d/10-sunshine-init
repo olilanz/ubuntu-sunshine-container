@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+echo "[init] Checking Sunshine config..."
+
+CONFIG_DIR="/config/.config/sunshine"
+DEFAULTS_DIR="/defaults/sunshine"
+
+if [ ! -f "${CONFIG_DIR}/sunshine.conf" ]; then
+  echo "[init] First run: seeding Sunshine config..."
+  mkdir -p "$CONFIG_DIR"
+  cp -n "${DEFAULTS_DIR}/sunshine.conf" "${CONFIG_DIR}/sunshine.conf"
+else
+  echo "[init] Existing Sunshine config detected."
+fi

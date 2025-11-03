@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -e
+
+echo "Starting Xorg display server..."
+/usr/bin/Xorg :0 -noreset -logfile /tmp/Xorg.0.log \
+  -config /etc/X11/xorg.conf.d/10-headless.conf vt1

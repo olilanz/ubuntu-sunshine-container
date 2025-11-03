@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -e
+echo "Starting XFCE desktop session on :0 as abc"
+
+export DISPLAY=:0
+export XDG_RUNTIME_DIR=/run/user/1000
+export HOME=/home/abc
+export XAUTHORITY=$HOME/.Xauthority
+mkdir -p "$HOME" "$XDG_RUNTIME_DIR"
+chown -R abc:abc "$HOME" "$XDG_RUNTIME_DIR"
+
+# give user permission to connect to X
+xhost +SI:localuser:abc || true
+
+# start the desktop session detached
+s6-setuidgid abc startxfce4 &
+sleep 5
+wait || true
+exit 0

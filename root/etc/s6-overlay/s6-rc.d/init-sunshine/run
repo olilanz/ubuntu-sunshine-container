@@ -1,23 +1,44 @@
-#!/bin/bash
-set -e
+#!/usr/bin/with-contenv bash
+set -euo pipefail
 
-echo "sunshine: waiting for X at ${DISPLAY:-:0} ..."
+# Disable system/session dbus so no activation attempts occur
+unset DBUS_SESSION_BUS_ADDRESS
+unset DBUS_SYSTEM_BUS_ADDRESS
+
+DISPLAY=${DISPLAY:-:0}
+XSOCK="/tmp/.X11-unix/X${DISPLAY#:}"
+
+echo "sunshine: waiting for X at $DISPLAY ..."
 for i in {1..60}; do
-  if [ -S /tmp/.X11-unix/X0 ]; then
-    echo "sunshine: X socket found, proceeding..."
+  if [ -S "$XSOCK" ]; then
+    echo "sunshine: X socket found after $((i*5))s"
     break
   fi
   sleep 5
 done
 
-if [ ! -S /tmp/.X11-unix/X0 ]; then
-  echo "sunshine: X socket not found after timeout, exiting..."
+if [ ! -S "$XSOCK" ]; then
+  echo "sunshine: X socket not found after timeout, exiting"
   exit 1
 fi
 
-echo "sunshine: waiting for PulseAudio to initialize..."
-sleep 2
-echo "sunshine: PulseAudio initialized, starting Sunshine..."
+# Ensure runtime and config dirs
+mkdir -p /run/user/1000 /config/.config/pulse /config/.config/sunshine
+chown -R abc:abc /run/user/1000 /config/.config
 
-# Run Sunshine as non-root user
-exec su -s /bin/bash abc -c "/usr/bin/sunshine --config-dir /config/sunshine"
+# Start PulseAudio
+if ! pgrep -u abc pulseaudio >/dev/null 2>&1; then
+  echo "sunshine: starting PulseAudio"
+  s6-setuidgid abc pulseaudio --start --exit-idle-time=-1 || true
+else
+  echo "sunshine: PulseAudio already running"
+fi
+
+# Export environment
+export DISPLAY=:0
+export XDG_RUNTIME_DIR=/run/user/1000
+export HOME=/config
+
+# Start Sunshine
+echo "sunshine: launching Sunshine as user abc..."
+exec s6-setuidgid abc /usr/bin/sunshine

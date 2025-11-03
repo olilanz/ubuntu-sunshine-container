@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+DISPLAY=${DISPLAY:-:0}
+XSOCK="/tmp/.X11-unix/X${DISPLAY#:}"
+
+echo "[init-sunshine] Waiting for X at $DISPLAY ..."
+for i in {1..60}; do
+  [ -S "$XSOCK" ] && break
+  sleep 1
+done
+[ -S "$XSOCK" ] || { echo "[init-sunshine] X socket not found, exiting."; exit 1; }
+
+# Optional: verify PulseAudio
+if ! pgrep -u abc pulseaudio >/dev/null 2>&1; then
+  echo "[init-sunshine] PulseAudio not detected (continuing anyway)"
+else
+  echo "[init-sunshine] PulseAudio detected"
+fi
+
+mkdir -p /run/user/1000
+chown abc:abc /run/user/1000
+
+export DISPLAY
+export XDG_RUNTIME_DIR=/run/user/1000
+export SUNSHINE_CONFIG_DIR="/config/.config/sunshine"
+
+# Graceful exit on container stop
+cleanup() {
+  echo "[init-sunshine] Stopping Sunshine..."
+  pkill -u abc -f "/usr/bin/sunshine" || true
+}
+trap cleanup SIGTERM SIGINT EXIT
+
+echo "[init-sunshine] Starting Sunshine as user abc"
+exec s6-setuidgid abc /usr/bin/sunshine

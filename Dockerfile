@@ -11,12 +11,30 @@ USER root
 ENV DEBIAN_FRONTEND=noninteractive
 
 # --- Dependencies for Sunshine runtime (X11, audio, input, DRM/GBM)
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl ca-certificates \
-    libopus0 libdrm2 libgbm1 libevdev2 \
-    libx11-6 libxext6 libxrandr2 libxtst6 libxss1 libxfixes3 libxi6 \
-    libpulse0 libwayland-client0 libudev1 x11-xserver-utils && \
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        curl ca-certificates \
+        libopus0 libdrm2 libgbm1 libevdev2 \
+        libx11-6 libxext6 libxrandr2 libxtst6 libxss1 libxfixes3 libxi6 \
+        libpulse0 libudev1 x11-xserver-utils \
+        xserver-xorg xserver-xorg-video-dummy dbus-x11 \
+        libvulkan1 mesa-vulkan-drivers vainfo && \
     rm -rf /var/lib/apt/lists/*
+
+# --- Dummy Xorg video driver installation
+RUN apt-get update && apt-get install -y \
+    xserver-xorg-video-dummy \
+    xserver-xorg-core \
+    xinit \
+    x11-xserver-utils \
+    x11-apps \
+    dbus-x11 \
+ && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# --- XFCE desktop installation (if not already present)
+RUN apt-get update && apt-get install -y \
+    xfce4 xfce4-terminal xfce4-goodies \
+ && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # --- Sunshine installation (fixed for Ubuntu 24.04 / LSIO base)
 RUN apt-get update && \
@@ -28,12 +46,9 @@ RUN apt-get update && \
         libayatana-appindicator3-1 miniupnpc libminiupnpc17 && \
     curl -L -o /tmp/sunshine.deb \
       https://github.com/LizardByte/Sunshine/releases/download/v2025.1027.181930/sunshine-ubuntu-24.04-amd64.deb && \
-    apt-get install -y ./tmp/sunshine.deb || apt-get install -f -y && \
+    apt-get install -y /tmp/sunshine.deb || apt-get install -f -y && \
     rm -f /tmp/sunshine.deb && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
-
-    # Install virtual display
-RUN apt-get update && apt-get install -y --no-install-recommends xvfb && rm -rf /var/lib/apt/lists/*
 
 # --- Ensure bash is installed (some Sunshine scripts use it explicitly)
 RUN apt-get update && apt-get install -y --no-install-recommends bash
@@ -42,6 +57,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends bash
 RUN mkdir -p /run/dbus /etc/glvnd/egl_vendor.d && \
     chown -R abc:abc /run/dbus /etc/glvnd/egl_vendor.d && \
     chmod 777 /run/dbus /etc/glvnd/egl_vendor.d || true
+
+# --- Fix /dev/uinput permissions for input device handling
+RUN chmod 666 /dev/uinput || true
+
+# --- Copy modified service scripts before pruning unwanted services
+COPY root/etc /etc/
+RUN chmod +x /etc/cont-init.d/10-sunshine-init
+RUN chmod +x /etc/cont-init.d/10-pulse-init
+RUN chmod +x /etc/s6-overlay/s6-rc.d/init-sunshine/run
+RUN chmod +x /etc/s6-overlay/s6-rc.d/svc-xorg/run
+
 
 # --- Remove Selkies / Web UI services completely
 RUN rm -rf \
@@ -117,12 +143,6 @@ RUN rm -rf \
 # Detach xsettingsd from removed init-services dependency
 RUN rm -f /etc/s6-overlay/s6-rc.d/svc-xsettingsd/dependencies.d/init-services || true
 
-# --- Reset s6 user bundle to only start what we want
-RUN rm -rf /etc/s6-overlay/s6-rc.d/user/contents.d/* && \
-    for s in svc-xorg svc-pulseaudio svc-dbus init-sunshine; do \
-      echo "$s" > /etc/s6-overlay/s6-rc.d/user/contents.d/$s ; \
-    done
-
 # --- Dummy init-video service to satisfy Sunshine dependency    
 RUN mkdir -p /etc/s6-overlay/s6-rc.d/init-video && \
     echo "oneshot" > /etc/s6-overlay/s6-rc.d/init-video/type && \
@@ -134,30 +154,12 @@ RUN mkdir -p /etc/s6-overlay/s6-rc.d/init-video && \
     touch /etc/s6-overlay/s6-rc.d/init-video/up && \
     echo init-video > /etc/s6-overlay/s6-rc.d/user/contents.d/init-video
 
-# 🧩 Replace LSIO's Xorg GPU loop (calls nvidia-smi) with a dummy
-RUN rm -rf /etc/s6-overlay/s6-rc.d/svc-xorg \
-           /etc/s6-overlay/s6-rc.d/user/contents.d/svc-xorg && \
-    mkdir -p /etc/s6-overlay/s6-rc.d/svc-xorg && \
-    echo "oneshot" > /etc/s6-overlay/s6-rc.d/svc-xorg/type && \
-    printf '#!/bin/bash\necho "svc-xorg: dummy placeholder for Sunshine (Xorg loop disabled)"\n' \
-      > /etc/s6-overlay/s6-rc.d/svc-xorg/run && \
-    chmod +x /etc/s6-overlay/s6-rc.d/svc-xorg/run && \
-    echo "" > /etc/s6-overlay/s6-rc.d/svc-xorg/finish && chmod +x /etc/s6-overlay/s6-rc.d/svc-xorg/finish && \
-    touch /etc/s6-overlay/s6-rc.d/svc-xorg/up && \
-    echo svc-xorg > /etc/s6-overlay/s6-rc.d/user/contents.d/svc-xorg
+# --- Copy default Sunshine configuration files
+COPY root/defaults /defaults/
 
-# --- Sunshine service registration
-COPY root/etc/s6-overlay/s6-rc.d/init-sunshine /etc/s6-overlay/s6-rc.d/init-sunshine
-RUN echo "longrun" > /etc/s6-overlay/s6-rc.d/init-sunshine/type && \
-    chmod +x /etc/s6-overlay/s6-rc.d/init-sunshine/run && \
-    [ -f /etc/s6-overlay/s6-rc.d/init-sunshine/finish ] && chmod +x /etc/s6-overlay/s6-rc.d/init-sunshine/finish || true && \
-    mkdir -p /etc/s6-overlay/s6-rc.d/init-sunshine/dependencies.d && \
-    touch /etc/s6-overlay/s6-rc.d/init-sunshine/dependencies.d/svc-xorg && \
-    touch /etc/s6-overlay/s6-rc.d/init-sunshine/dependencies.d/svc-pulseaudio
+# --- Expose Sunshine ports
+EXPOSE 47984/tcp 47989/tcp 47990/tcp 47998-48010/udp
 
-# --- Sunshine configuration directory
-RUN mkdir -p /config/sunshine/logs && chown -R abc:abc /config
-
-EXPOSE 47984/tcp 47989/tcp 47998-48010/udp
 ENV DISPLAY=:0 \
-    SUNSHINE_CONFIG_DIR=/config/sunshine
+    XDG_RUNTIME_DIR=/run/user/1000 \
+    XDG_SESSION_TYPE=x11
