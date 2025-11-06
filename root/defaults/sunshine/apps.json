@@ -1,0 +1,17 @@
+{
+  "apps": [
+    {
+      "name": "Desktop (XFCE)",
+      "cmd": ["/usr/bin/startxfce4"],
+      "working_dir": "/config",
+      "auto_launch": true,
+      "hidden": false,
+      "exit_timeout": 10,
+      "env": {
+        "DISPLAY": ":0",
+        "XDG_RUNTIME_DIR": "/run/user/1000",
+        "HOME": "/config"
+      }
+    }
+  ]
+}

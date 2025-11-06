@@ -1,14 +1,61 @@
 #!/usr/bin/env bash
 set -euo pipefail
-echo "[init] Checking Sunshine config..."
+
+echo "[init] Checking Sunshine configuration..."
 
 CONFIG_DIR="/config/.config/sunshine"
 DEFAULTS_DIR="/defaults/sunshine"
+CREDS_DIR="${CONFIG_DIR}/credentials"
 
+# --- Ensure base directories
+mkdir -p "${CONFIG_DIR}" "${CREDS_DIR}"
+chown -R abc:abc "${CONFIG_DIR}"
+
+# --- Seed configs on first run
 if [ ! -f "${CONFIG_DIR}/sunshine.conf" ]; then
-  echo "[init] First run: seeding Sunshine config..."
-  mkdir -p "$CONFIG_DIR"
-  cp -n "${DEFAULTS_DIR}/sunshine.conf" "${CONFIG_DIR}/sunshine.conf"
-else
-  echo "[init] Existing Sunshine config detected."
+  echo "[init] Seeding default sunshine.conf..."
+  cp "${DEFAULTS_DIR}/sunshine.conf" "${CONFIG_DIR}/sunshine.conf"
 fi
+
+if [ ! -f "${CONFIG_DIR}/apps.json" ]; then
+  echo "[init] Seeding default apps.json..."
+  cp "${DEFAULTS_DIR}/apps.json" "${CONFIG_DIR}/apps.json"
+fi
+
+# --- Generate Sunshine CA and server certificates if missing
+CA_KEY="${CREDS_DIR}/cakey.pem"
+CA_CERT="${CREDS_DIR}/cacert.pem"
+SRV_KEY="${CREDS_DIR}/key.pem"
+SRV_CERT="${CREDS_DIR}/cert.pem"
+
+if [ ! -f "${CA_KEY}" ] || [ ! -f "${CA_CERT}" ]; then
+  echo "[init] Generating Sunshine local CA..."
+  openssl req -x509 -nodes -newkey rsa:2048 \
+    -keyout "${CA_KEY}" \
+    -out "${CA_CERT}" \
+    -subj "/CN=Sunshine Local CA" \
+    -days 3650 >/dev/null 2>&1
+fi
+
+if [ ! -f "${SRV_KEY}" ] || [ ! -f "${SRV_CERT}" ]; then
+  echo "[init] Generating Sunshine server certificate signed by local CA..."
+  openssl req -nodes -newkey rsa:2048 \
+    -keyout "${SRV_KEY}" \
+    -out "${CREDS_DIR}/server.csr" \
+    -subj "/CN=localhost" >/dev/null 2>&1
+
+  openssl x509 -req -in "${CREDS_DIR}/server.csr" \
+    -CA "${CA_CERT}" -CAkey "${CA_KEY}" -CAcreateserial \
+    -out "${SRV_CERT}" -days 3650 -sha256 >/dev/null 2>&1
+
+  rm -f "${CREDS_DIR}/server.csr" "${CREDS_DIR}/cacert.srl"
+fi
+
+chown -R abc:abc "${CREDS_DIR}"
+chmod 600 "${CREDS_DIR}"/*.pem
+echo "[init] Sunshine credentials ready."
+
+# --- Fix ownership recursively (safe default)
+chown -R abc:abc "${CONFIG_DIR}"
+
+echo "[init] Sunshine configuration ready."
