@@ -119,19 +119,22 @@ docker build -t ubuntu-xfce-sunshine .
 
 docker run --rm -it \
    --name ubuntu-xfce-sunshine \
+   --gpus all \
    --runtime=nvidia \
    --shm-size=16g \
-   --cap-add=SYS_ADMIN \
-   --cap-add=SYS_TTY_CONFIG \
+   --cap-add=SYS_NICE \
    --device /dev/uinput \
    --device /dev/nvidia-uvm \
    --device /dev/nvidia0 \
    --device /dev/nvidiactl \
    --device /dev/nvidia-modeset \
    --device /dev/dri \
-   -e PUID=1000 -e PGID=1000 -e TZ=Europe/Copenhagen \
+   -e DISPLAY=:0 \
+   -e PUID=99 -e PGID=100 -e TZ=Europe/Copenhagen \
    -e NVIDIA_VISIBLE_DEVICES=all -e NVIDIA_DRIVER_CAPABILITIES=all \
-   -p 47984:47984/tcp -p 47989:47989/tcp -p 47990:47990 -p 47998-48010:47998-48010/udp \
+   -p 47984-47990:47984-47990/tcp \
+   -p 47998-48010:47998-48010/udp \
+   -v /mnt/cache/appdata/ubuntu-xfce-sunshine/config:/config \
    ubuntu-xfce-sunshine
 
 docker exec -it ubuntu-xfce-sunshine bash

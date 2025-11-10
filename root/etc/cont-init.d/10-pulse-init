@@ -1,8 +1,0 @@
-#!/usr/bin/env bash
-set -euo pipefail
-echo "[init] Creating PulseAudio config directory..."
-
-mkdir -p /config/.config/pulse /run/user/1000
-chown -R abc:abc /config/.config/pulse /run/user/1000
-
-echo "[init] PulseAudio directories ready."

@@ -1,2 +1,0 @@
-#!/usr/bin/execlineb -P
-s6-echo "sunshine: exited with code $1, restarting if needed..."

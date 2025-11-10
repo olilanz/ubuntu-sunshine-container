@@ -1,6 +1,0 @@
-#!/usr/bin/env bash
-set -euo pipefail
-
-echo "[svc-xorg] Cleaning up X socket..."
-rm -f /tmp/.X11-unix/X0 || true
-exit 0
