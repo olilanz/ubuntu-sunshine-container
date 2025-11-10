@@ -78,24 +78,9 @@ This image turns your Unraid server (or any NVIDIA-equipped Linux host) into a f
 - Keep ports closed to the public internet; use your LAN or a VPN for remote access.
 - Updates: rebuild or pull when a new Sunshine release is published.
 
-## 🧱 Folder Layout (repo)
-
-```
-ubuntu-desktop-sunshine/
-├── Dockerfile
-├── README.md
-├── icon.png
-└── root/
-    └── etc/
-        └── services.d/
-            └── sunshine/
-                ├── run
-                └── finish
-```
 
 ## ❤️ Credits
 
-- [LinuxServer.io Webtop](https://github.com/linuxserver/docker-webtop)
 - [LizardByte Sunshine](https://github.com/LizardByte/Sunshine)
 - [Moonlight](https://moonlight-stream.org/)
 
