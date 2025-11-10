@@ -131,7 +131,7 @@ docker run --rm -it \
    --device /dev/dri \
    -e PUID=1000 -e PGID=1000 -e TZ=Europe/Copenhagen \
    -e NVIDIA_VISIBLE_DEVICES=all -e NVIDIA_DRIVER_CAPABILITIES=all \
-   -p 47984:47984/tcp -p 47989:47989/tcp -p 47998-48010:47998-48010/udp \
+   -p 47984:47984/tcp -p 47989:47989/tcp -p 47990:47990 -p 47998-48010:47998-48010/udp \
    ubuntu-xfce-sunshine
 
 docker exec -it ubuntu-xfce-sunshine bash
