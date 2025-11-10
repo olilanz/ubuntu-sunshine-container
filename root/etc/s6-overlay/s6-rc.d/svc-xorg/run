@@ -1,6 +1,30 @@
 #!/usr/bin/env bash
-set -e
+set -euo pipefail
 
-echo "Starting Xorg display server..."
-/usr/bin/Xorg :0 -noreset -logfile /tmp/Xorg.0.log \
-  -config /etc/X11/xorg.conf.d/10-headless.conf vt1
+echo "[svc-xorg] Starting Xorg display server..."
+
+# Launch Xorg in background
+/usr/lib/xorg/Xorg :0 -noreset -logfile /tmp/Xorg.0.log \
+  -config /etc/X11/xorg.conf.d/10-headless.conf vt1 &
+
+# Wait for X socket to appear
+for i in {1..30}; do
+  [ -S "/tmp/.X11-unix/X0" ] && break
+  sleep 1
+done
+
+if [ ! -S "/tmp/.X11-unix/X0" ]; then
+  echo "[svc-xorg] X socket not found after timeout, exiting."
+  exit 1
+fi
+
+echo "[svc-xorg] Xorg is up. Applying background..."
+
+# --- 👇 Add background color and optional overlay text ---
+sudo -u abc DISPLAY=:0 xsetroot -solid "#191977" || true
+
+# Optional: display visible overlay text
+sudo -u abc DISPLAY=:0 xmessage -center -timeout 5 "X11 is alive on :0" || true
+
+echo "[svc-xorg] Dummy screen initialized with background."
+wait %1

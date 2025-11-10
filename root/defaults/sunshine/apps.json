@@ -1,12 +1,25 @@
 {
   "apps": [
     {
-      "name": "Desktop (XFCE)",
-      "cmd": ["/usr/bin/startxfce4"],
+      "name": "XFCE Desktop",
+      "cmd": ["/bin/bash", "-lc", "dbus-launch --exit-with-session startxfce4"],
       "working_dir": "/config",
       "auto_launch": true,
       "hidden": false,
       "exit_timeout": 10,
+      "env": {
+        "DISPLAY": ":0",
+        "XDG_RUNTIME_DIR": "/run/user/1000",
+        "HOME": "/config"
+      }
+    },
+    {
+      "name": "XTerm Test",
+      "cmd": ["/usr/bin/xterm", "-fa", "Monospace", "-fs", "14"],
+      "working_dir": "/config",
+      "auto_launch": false,
+      "hidden": false,
+      "exit_timeout": 5,
       "env": {
         "DISPLAY": ":0",
         "XDG_RUNTIME_DIR": "/run/user/1000",
