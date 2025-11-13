@@ -27,8 +27,8 @@ RUN apt-get update && \
 # ------------------------------------------------------------
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        xserver-xorg-video-dummy \
         xinit \
+        xserver-xorg-core \
         x11-utils \
         x11-xserver-utils \
         mesa-utils \
