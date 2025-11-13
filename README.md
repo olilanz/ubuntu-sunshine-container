@@ -50,6 +50,11 @@ docker run --rm -it \
    --runtime=nvidia \
    --shm-size=16g \
    --cap-add=SYS_NICE \
+   --cap-add=SYS_ADMIN \
+   --cap-add=SYS_TTY_CONFIG \
+   --cap-add=SYS_RESOURCE \
+   --cap-add=NET_ADMIN \
+   --ipc=host \
    --device /dev/uinput \
    --device /dev/nvidia-uvm \
    --device /dev/nvidia0 \
@@ -62,6 +67,7 @@ docker run --rm -it \
    -p 47984-47990:47984-47990/tcp \
    -p 47998-48010:47998-48010/udp \
    -v /mnt/cache/appdata/ubuntu-xfce-sunshine/config:/config \
+   -v /tmp/.X11-unix:/tmp/.X11-unix \
    ubuntu-xfce-sunshine
 ```
 
