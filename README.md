@@ -1,109 +1,51 @@
-# 🧩 Ubuntu Desktop + Sunshine
+# 🧩 Headless Ubuntu + Sunshine (Xorg + PipeWire)
 
-**Ubuntu Desktop (XFCE) running headless in Docker, with [Sunshine](https://github.com/LizardByte/Sunshine) for low-latency streaming to [Moonlight](https://moonlight-stream.org/) clients.**
+A **headless Ubuntu 24.04 environment** running in Docker, featuring:
 
-This image turns your Unraid server (or any NVIDIA-equipped Linux host) into a full remote workstation:
-- Use it as a **personal Ubuntu desktop** (browser, VS Code, terminals, dev tools)
-- Stream it to an **iPad, Apple TV, Mac, or PC** using Moonlight
-- Play **native Linux games or emulators**
-- Encode using **NVENC** on your NVIDIA GPU for ultra-smooth 1080p60 (or higher) streaming
+- A **virtual X11 desktop** (Xorg dummy monitor)
+- **PipeWire + WirePlumber** for audio
+- **Sunshine** for low-latency NVENC streaming
+- Full compatibility with **Moonlight** clients (iPad, iPhone, Apple TV, Mac, Windows, Linux)
 
-## 🚀 Quick Start (Unraid)
+This container turns your Unraid server (or any NVIDIA-equipped Linux host) into a powerful **remote desktop / gaming / development node**.  
+It requires **no GPU passthrough**, **no VM**, and lets you use *both* your GPUs freely.
 
-1. **Install the NVIDIA Driver plugin** on Unraid  
-   – Required for NVENC / CUDA in containers.
+## 🚀 Features
 
-2. **Search “Ubuntu Desktop – Sunshine”** in the Community Applications tab  
-   or add your template repo manually.
+- 🖥️ **Headless Xorg dummy display**
+- 🎧 **PipeWire + WirePlumber**
+- ☀️ **Sunshine** (NVENC encoding, low latency)
+- 🎮 Works with Moonlight on all platforms
+- ⚙️ **NVIDIA GPU sharing**
+- 🧱 Expandable with desktops (XFCE, LXQt, etc.)
 
-3. **Apply these basic settings:**
-   - Appdata path: `/mnt/user/appdata/ubuntu-desktop-sunshine`
-   - Workspace path: `/mnt/user/workspace`
-   - GPU runtime: `--runtime=nvidia`
-   - Ports: 47984/tcp, 47989/tcp, 47998–48010/udp
-   - Resolution: 1920×1080 @ 60 Hz (default)
+## 📁 Repository Layout
 
-4. **Launch the container**  
-   Sunshine starts automatically once the desktop and audio stack are ready.
+```
+Dockerfile
+root/
+  etc/
+    supervisor/
+      conf.d/
+        supervisord.conf
+  etc/X11/xorg.conf.d/
+    10-dummy.conf
+README.md
+```
 
-5. **Pair your Moonlight client**  
-   - Open Moonlight on iPad, Apple TV, Mac, or PC.  
-   - Add your server by IP (port 47984).  
-   - Approve the pairing request in Sunshine’s web UI.
+## 🏗️ Quick Start
 
-## 🎮 Features
-
-- 🖥️ Full **Ubuntu 24.04 LTS** desktop (XFCE 4)
-- 🎧 **PulseAudio** sound (bi-directional mic support)
-- ⚙️ **Sunshine** streaming server (NVENC HEVC/H.264)
-- 🧠 **CUDA-ready** for light GPU compute or LLM workloads
-- 🧑‍💻 Ideal for **remote development** (VS Code, Git, browsers, Docker CLI)
-- 📦 All persistent config stored under `/config`
-- 🔒 No ports exposed externally by default – LAN or VPN only
-
-## 🧰 Volumes
-
-| Path | Purpose |
-|------|----------|
-| `/config` | User config, Sunshine settings, XFCE profile |
-| `/workspace` | Your dev projects, repos, or shared data |
-
-## 🔧 Environment Variables
-
-| Variable | Default | Description |
-|-----------|----------|-------------|
-| `PUID` | `1000` | Container user ID |
-| `PGID` | `1000` | Container group ID |
-| `TZ` | `Europe/Copenhagen` | Time zone |
-| `NVIDIA_VISIBLE_DEVICES` | `all` | Select GPU(s) |
-| `NVIDIA_DRIVER_CAPABILITIES` | `all` | Enable compute/video/utility |
-| `CUSTOM_RES_W` | `1920` | Virtual monitor width |
-| `CUSTOM_RES_H` | `1080` | Virtual monitor height |
-| `CUSTOM_REFRESH_RATE` | `60` | Virtual monitor refresh rate |
-
-## 🛰️ Ports
-
-| Port | Protocol | Purpose |
-|------|-----------|----------|
-| 47984 | TCP | Sunshine Web UI & pairing |
-| 47989 | TCP | Control channel |
-| 47998–48010 | UDP | Video + audio + input streams |
-| 3000 | TCP (optional) | noVNC Web desktop (admin only) |
-
-## 🧩 Tips
-
-- Use **HEVC (H.265)** for the best quality/bitrate ratio; your iPad Pro decodes it natively.
-- For 1080p60 streaming, start at **25–35 Mbps** bitrate.
-- Disable XFCE’s compositor if you notice any input lag.
-- Keep ports closed to the public internet; use your LAN or a VPN for remote access.
-- Updates: rebuild or pull when a new Sunshine release is published.
-
-
-## ❤️ Credits
-
-- [LizardByte Sunshine](https://github.com/LizardByte/Sunshine)
-- [Moonlight](https://moonlight-stream.org/)
-
-## 🪄 Example Use Cases
-
-| Scenario | How |
-|-----------|-----|
-| **Play Minecraft (Java)** | Install natively in Ubuntu, add to Sunshine apps |
-| **Develop remotely** | Run VS Code in the desktop or connect via Remote-SSH |
-| **Family couch gaming** | Connect iPad → TV HDMI → Moonlight session |
-| **Light GPU compute** | Use CUDA or run LLM containers alongside |
-
-### 🧭 License
-MIT / Apache 2.0
-
-# Notes
-
+### Build
+```bash
 docker rm -f ubuntu-xfce-sunshine
-
 docker build -t ubuntu-xfce-sunshine .
+```
 
+### Run
+```bash
 docker run --rm -it \
    --name ubuntu-xfce-sunshine \
+   --user root \
    --gpus all \
    --runtime=nvidia \
    --shm-size=16g \
@@ -114,12 +56,58 @@ docker run --rm -it \
    --device /dev/nvidiactl \
    --device /dev/nvidia-modeset \
    --device /dev/dri \
-   -e DISPLAY=:0 \
-   -e PUID=99 -e PGID=100 -e TZ=Europe/Copenhagen \
-   -e NVIDIA_VISIBLE_DEVICES=all -e NVIDIA_DRIVER_CAPABILITIES=all \
+   -e TZ=Europe/Copenhagen \
+   -e NVIDIA_VISIBLE_DEVICES=all \
+   -e NVIDIA_DRIVER_CAPABILITIES=all \
    -p 47984-47990:47984-47990/tcp \
    -p 47998-48010:47998-48010/udp \
    -v /mnt/cache/appdata/ubuntu-xfce-sunshine/config:/config \
    ubuntu-xfce-sunshine
+```
 
+### Access
+```bash
 docker exec -it ubuntu-xfce-sunshine bash
+```
+
+## 🌐 Sunshine Web UI
+
+Visit:
+```
+http://<unraid-ip>:47990
+```
+
+## 🎮 Moonlight Setup
+
+1. Install Moonlight
+2. Add host IP
+3. Pair with PIN
+4. Start streaming (1080p headless desktop)
+
+## 🔧 Volumes
+
+| Path | Purpose |
+|------|---------|
+| `/config` | Sunshine settings |
+
+## ⚙️ Environment Variables
+
+| Variable | Purpose |
+|----------|----------|
+| `TZ` | Timezone |
+| `DISPLAY` | Xorg display (:0) |
+| `NVIDIA_VISIBLE_DEVICES` | GPU selection |
+| `NVIDIA_DRIVER_CAPABILITIES` | Enable NVENC, compute, etc. |
+
+## 🔌 Ports
+
+| Port | Purpose |
+|------|---------|
+| 47984 | Web UI / pairing |
+| 47998–48010 | Video/audio/input streams |
+
+## ❤️ Credits
+
+- Sunshine
+- Moonlight
+- PipeWire / WirePlumber

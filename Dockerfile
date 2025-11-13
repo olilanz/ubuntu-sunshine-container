@@ -46,6 +46,11 @@ ENV SUNSHINE_LOG=info
 ENV SUNSHINE_CONFIG_DIR=/config
 
 # ------------------------------------------------------------
+# Create runtime directories
+# ------------------------------------------------------------
+RUN mkdir -p /tmp/runtime-gamer && chmod 700 /tmp/runtime-gamer
+
+# ------------------------------------------------------------
 # Expose Sunshine ports
 # ------------------------------------------------------------
 EXPOSE 47984-47990/tcp
